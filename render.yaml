@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: grid-block-duel-server
+    env: node
+    plan: free
+    rootDir: server
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: CORS_ORIGINS
+        # Update this in the Render dashboard with your Vercel URL once it's deployed.
+        # Example: https://grid-block-duel.vercel.app
+        sync: false
