@@ -581,20 +581,54 @@ function PlayerStrip({
 
 function useResponsiveBoard(size: number) {
   const [vw, setVw] = useState(() =>
-    typeof window === "undefined" ? 800 : window.innerWidth,
+    typeof window === "undefined" ? 800 : window.innerWidth
   );
+
+  const [vh, setVh] = useState(() =>
+    typeof window === "undefined" ? 800 : window.innerHeight
+  );
+
   useEffect(() => {
     function onResize() {
       setVw(window.innerWidth);
+      setVh(window.innerHeight);
     }
+
     window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
+    window.addEventListener("orientationchange", onResize);
+
+    return () => {
+      window.removeEventListener("resize", onResize);
+      window.removeEventListener("orientationchange", onResize);
+    };
   }, []);
 
   return useMemo(() => {
-    const gap = vw < 420 ? 6 : vw < 720 ? 8 : 10;
-    const available = Math.min(vw - 24, 640);
-    const cell = Math.max(24, Math.floor((available - (size - 1) * gap) / size));
+    // Gap (also wall thickness)
+    // Slightly larger on bigger screens for better wall hit targets
+    const gap =
+      vw < 420 ? 6 :
+      vw < 720 ? 8 :
+      vw < 1100 ? 10 :
+      12;
+
+    // Reserve space for top bar, status row, toolbar, padding
+    const verticalChrome = vw < 720 ? 240 : 280;
+
+    const heightCap = Math.max(280, vh - verticalChrome);
+
+    // Horizontal cap with responsive side padding
+    const sidePad = vw < 720 ? 24 : 48;
+
+    const widthCap = Math.min(vw - sidePad, 880);
+
+    const available = Math.min(widthCap, heightCap);
+
+    const cell = Math.max(
+      28,
+      Math.floor((available - (size - 1) * gap) / size)
+    );
+
     return { cell, gap };
-  }, [vw, size]);
+  }, [vw, vh, size]);
 }
