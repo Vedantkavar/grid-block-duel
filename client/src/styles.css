@@ -136,6 +136,14 @@ button {
   background: var(--pawn-B);
 }
 
+.menu-card__pawn--C {
+  background: #7be0c2;
+}
+
+.menu-card__pawn--D {
+  background: #ffd166;
+}
+
 .menu-card__plug {
   font-size: 20px;
 }
@@ -536,6 +544,113 @@ button {
   text-overflow: ellipsis;
 }
 
+/* Ability slots inside the player strip */
+.ability-slots {
+  display: flex;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.player-strip--B .ability-slots {
+  justify-content: flex-end;
+}
+
+.ability-slot {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
+  border: 2px solid rgba(255, 255, 255, 0.18);
+  color: #ffffff;
+  font-family: ui-monospace, monospace;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+  transition:
+    transform 120ms ease,
+    box-shadow 120ms ease,
+    filter 120ms ease;
+}
+
+/* Category-tinted slots: reuse the lootbox color palette so abilities visually
+   match where they came from. */
+.ability-slot--move {
+  background: radial-gradient(circle at 30% 30%, #5cb6ff 0%, #2563eb 80%);
+  box-shadow:
+    0 0 0 1px rgba(78, 163, 255, 0.4),
+    0 2px 8px rgba(78, 163, 255, 0.45);
+}
+
+.ability-slot--wall {
+  background: radial-gradient(circle at 30% 30%, #ffb74d 0%, #ef6c00 80%);
+  box-shadow:
+    0 0 0 1px rgba(255, 156, 51, 0.45),
+    0 2px 8px rgba(255, 156, 51, 0.45);
+}
+
+.ability-slot--effect {
+  background: radial-gradient(circle at 30% 30%, #c4b5fd 0%, #7c3aed 80%);
+  box-shadow:
+    0 0 0 1px rgba(167, 139, 250, 0.45),
+    0 2px 8px rgba(167, 139, 250, 0.45);
+}
+
+.ability-slot--hidden {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--line);
+  color: var(--muted);
+  box-shadow: none;
+}
+
+.ability-slot:hover:not(:disabled):not(.ability-slot--empty) {
+  transform: translateY(-1px);
+  filter: brightness(1.15);
+}
+
+.ability-slot:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.ability-slot:disabled {
+  cursor: default;
+  opacity: 0.7;
+}
+
+.ability-slot--empty {
+  color: var(--muted);
+  cursor: default;
+  background: transparent;
+  border: 2px dashed rgba(255, 255, 255, 0.12);
+  box-shadow: none;
+  font-weight: 400;
+  text-shadow: none;
+}
+
+.ability-slot--active {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  filter: brightness(1.2);
+}
+
+/* "Scrambled" badge near player name */
+.badge--scrambled {
+  display: inline-block;
+  margin-left: 6px;
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: rgba(167, 139, 250, 0.18);
+  color: #a78bfa;
+  border: 1px solid rgba(167, 139, 250, 0.4);
+  letter-spacing: 0.4px;
+  vertical-align: middle;
+}
+
 .turn-indicator {
   font-size: 13px;
   color: var(--muted);
@@ -614,6 +729,21 @@ button {
   background: var(--cell-legal-hover);
 }
 
+.cell--ability-target {
+  background: rgba(167, 139, 250, 0.45);
+  cursor: pointer;
+}
+
+.cell--ability-target:hover {
+  background: rgba(167, 139, 250, 0.7);
+}
+
+.cell--ability-first {
+  background: rgba(255, 209, 102, 0.55);
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
 .goal-row {
   position: absolute;
   pointer-events: none;
@@ -660,6 +790,130 @@ button {
 .wall--ghost-bad {
   border-color: var(--wall-ghost-bad);
   background: rgba(255, 80, 80, 0.15);
+}
+
+.wall--breakable {
+  cursor: pointer;
+  pointer-events: auto;
+  filter: brightness(1.15);
+  outline: 2px dashed rgba(255, 209, 102, 0.6);
+  outline-offset: 2px;
+  animation: wall-breakable-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes wall-breakable-pulse {
+  0%, 100% { outline-color: rgba(255, 209, 102, 0.4); }
+  50% { outline-color: rgba(255, 209, 102, 0.9); }
+}
+
+/* =============================================================
+   LOOT BOX + TRAPS
+   ============================================================= */
+
+.lootbox {
+  position: absolute;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  font-weight: 700;
+  font-family: ui-monospace, monospace;
+  pointer-events: none;
+  border: 2px solid rgba(255, 255, 255, 0.25);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+  animation: lootbox-bob 1.6s ease-in-out infinite;
+}
+
+.lootbox__glyph {
+  line-height: 1;
+}
+
+/* Category-tinted backgrounds + glow rings */
+.lootbox--move {
+  background: radial-gradient(circle at 30% 30%, #5cb6ff 0%, #2563eb 80%);
+  box-shadow:
+    0 0 0 2px rgba(78, 163, 255, 0.4),
+    0 4px 14px rgba(78, 163, 255, 0.55),
+    0 0 24px rgba(78, 163, 255, 0.5);
+}
+
+.lootbox--wall {
+  background: radial-gradient(circle at 30% 30%, #ffb74d 0%, #ef6c00 80%);
+  box-shadow:
+    0 0 0 2px rgba(255, 156, 51, 0.45),
+    0 4px 14px rgba(255, 156, 51, 0.55),
+    0 0 24px rgba(255, 156, 51, 0.5);
+}
+
+.lootbox--effect {
+  background: radial-gradient(circle at 30% 30%, #c4b5fd 0%, #7c3aed 80%);
+  box-shadow:
+    0 0 0 2px rgba(167, 139, 250, 0.45),
+    0 4px 14px rgba(167, 139, 250, 0.55),
+    0 0 24px rgba(167, 139, 250, 0.5);
+}
+
+@keyframes lootbox-bob {
+  0%, 100% {
+    transform: translateY(0) rotate(-2deg);
+  }
+  50% {
+    transform: translateY(-3px) rotate(2deg);
+  }
+}
+
+.trap {
+  position: absolute;
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  font-family: ui-monospace, monospace;
+  font-weight: 700;
+  font-size: 16px;
+  color: white;
+  pointer-events: none;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.trap--A {
+  background: rgba(78, 163, 255, 0.4);
+  box-shadow: 0 0 12px rgba(78, 163, 255, 0.4);
+}
+
+.trap--B {
+  background: rgba(255, 107, 154, 0.4);
+  box-shadow: 0 0 12px rgba(255, 107, 154, 0.4);
+}
+
+.trap--near-break {
+  animation: trap-near-break 0.6s ease-in-out infinite;
+}
+
+@keyframes trap-near-break {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(0.96); opacity: 0.7; }
+}
+
+.trap__count {
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  line-height: 1;
+}
+
+.trap__hits {
+  display: flex;
+  gap: 3px;
+}
+
+.trap__hit-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.85);
+  box-shadow: 0 0 4px rgba(255, 255, 255, 0.5);
 }
 
 /* =============================================================
@@ -854,16 +1108,16 @@ button {
   color: #1a1d2e;
 }
 
-/* Hide kbd hints on touch / small screens */
+/* Hide kbd hints on touch / small screens; make buttons bigger for taps. */
 @media (max-width: 720px) {
   .btn kbd {
     display: none;
   }
-  .toolbar{
+  .toolbar {
     width: 100%;
-    gap:6px;
+    gap: 6px;
   }
-  .toolbar .btn{
+  .toolbar .btn {
     flex: 1 1 0;
     min-height: 44px;
     padding: 10px 8px;
@@ -1136,4 +1390,864 @@ button {
   .modal-backdrop {
     animation: none !important;
   }
+}
+
+/* =============================================================
+   ABILITY UI
+   ============================================================= */
+
+.play__topbar-right {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.btn--icon {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: ui-serif, Georgia, serif;
+  font-style: italic;
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.btn--sm {
+  padding: 4px 10px;
+  font-size: 12px;
+}
+
+.ability-banner {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  background: linear-gradient(135deg, rgba(167, 139, 250, 0.2), rgba(78, 163, 255, 0.15));
+  border: 1px solid rgba(167, 139, 250, 0.5);
+  color: var(--text);
+  padding: 8px 14px;
+  border-radius: 10px;
+  font-size: 14px;
+}
+
+.ability-banner strong {
+  color: #c4b5fd;
+}
+
+/* Info card */
+.info-card {
+  text-align: left;
+}
+
+.info-card h2 {
+  text-align: center;
+  margin-bottom: 4px;
+}
+
+.info-card__row {
+  display: flex;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--muted);
+  justify-content: center;
+}
+
+.info-card__label {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.info-card__ability {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 12px 14px;
+  text-align: left;
+}
+
+.info-card__ability strong {
+  display: block;
+  font-size: 16px;
+  color: var(--accent);
+  margin-bottom: 4px;
+}
+
+.info-card__ability p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* Pickup grid */
+.pickup-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+@media (min-width: 600px) {
+  .pickup-grid {
+    grid-template-columns: 1fr 1fr 1fr;
+  }
+}
+
+.pickup-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: left;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 12px;
+  cursor: pointer;
+  color: var(--text);
+  position: relative;
+  transition:
+    background 120ms ease,
+    border-color 120ms ease,
+    transform 60ms ease;
+}
+
+.pickup-card:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: var(--accent);
+}
+
+.pickup-card:active {
+  transform: translateY(1px);
+}
+
+.pickup-card--new {
+  border-color: var(--accent);
+  background: rgba(255, 209, 102, 0.08);
+}
+
+.pickup-card__tag {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: var(--accent);
+  color: #1a1d2e;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 999px;
+  letter-spacing: 0.5px;
+}
+
+.pickup-card__name {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.pickup-card__desc {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.pickup-card__action {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 4px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.info-card__list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Lootbox shown inline (in the info modal). Override the absolute-positioned
+   default so it sits as a regular block element. */
+.lootbox--display {
+  position: static;
+  width: 44px;
+  height: 44px;
+  font-size: 22px;
+  flex-shrink: 0;
+  animation: none;
+}
+
+.info-card__ability {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.info-card__ability-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+/* Wraps each ability slot so the small "x" discard button can sit on top. */
+.ability-slot-wrap {
+  position: relative;
+  display: inline-flex;
+}
+
+.ability-slot__discard {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 80, 80, 0.85);
+  color: white;
+  font-size: 11px;
+  font-weight: 700;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition:
+    background 120ms ease,
+    transform 80ms ease;
+  opacity: 0;
+}
+
+.ability-slot-wrap:hover .ability-slot__discard,
+.ability-slot__discard:focus-visible {
+  opacity: 1;
+}
+
+/* Touch devices: always visible (no hover state). */
+@media (hover: none) {
+  .ability-slot__discard {
+    opacity: 1;
+  }
+}
+
+.ability-slot__discard:hover {
+  background: rgba(255, 80, 80, 1);
+  transform: scale(1.1);
+}
+
+/* Cancel button shown in the toolbar while an ability is active. */
+.btn--cancel {
+  background: rgba(167, 139, 250, 0.18);
+  border-color: rgba(167, 139, 250, 0.55);
+  color: #c4b5fd;
+}
+
+.btn--cancel:hover:not(:disabled) {
+  background: rgba(167, 139, 250, 0.3);
+  border-color: rgba(167, 139, 250, 0.8);
+}
+
+/* =============================================================
+   KILLER MODE � 4 player
+   ============================================================= */
+
+/* Player setup grid (4 cards) */
+.killer-players {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+@media (max-width: 560px) {
+  .killer-players {
+    grid-template-columns: 1fr;
+  }
+}
+
+.setup-player--killer-A { border-left: 3px solid #4ea3ff; }
+.setup-player--killer-B { border-left: 3px solid #ff6b9a; }
+.setup-player--killer-C { border-left: 3px solid #7be0c2; }
+.setup-player--killer-D { border-left: 3px solid #ffd166; }
+
+/* Curtain (pass-the-device) */
+.curtain {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+}
+
+.curtain__inner {
+  background: var(--bg-elev);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 40px 32px;
+  text-align: center;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.45);
+}
+
+.curtain__pass {
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  font-size: 12px;
+}
+
+.curtain__name {
+  font-size: clamp(28px, 6vw, 44px);
+  font-weight: 700;
+}
+
+.curtain__pawn {
+  margin: 8px 0;
+}
+
+.curtain__role {
+  font-size: 18px;
+  font-weight: 600;
+  padding: 6px 14px;
+  border-radius: 999px;
+}
+
+.curtain__role--runner {
+  background: rgba(123, 224, 194, 0.16);
+  color: #7be0c2;
+  border: 1px solid rgba(123, 224, 194, 0.5);
+}
+
+.curtain__role--killer {
+  background: rgba(239, 68, 68, 0.18);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.6);
+}
+
+.curtain__sub {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+  max-width: 320px;
+}
+
+.curtain__actions {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+/* Active-player banner */
+.killer-banner {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+
+.killer-banner--killer {
+  border-color: rgba(239, 68, 68, 0.5);
+  background: rgba(239, 68, 68, 0.08);
+}
+
+.killer-banner__role {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.killer-banner__moves {
+  margin-left: auto;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* Roster */
+.killer-roster {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  width: 100%;
+}
+
+@media (max-width: 600px) {
+  .killer-roster {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.killer-roster__card {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  min-width: 0;
+}
+
+.killer-roster__card--active {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(255, 209, 102, 0.18);
+}
+
+.killer-roster__card--killer {
+  background: rgba(239, 68, 68, 0.08);
+  border-color: rgba(239, 68, 68, 0.4);
+}
+
+.killer-roster__card--dead {
+  opacity: 0.45;
+  filter: grayscale(0.5);
+}
+
+.killer-roster__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.killer-roster__name {
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.killer-roster__role {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+/* Hearts */
+.hearts {
+  display: flex;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.heart {
+  width: 14px;
+  height: 14px;
+  display: inline-block;
+  background-color: transparent;
+  /* Heart shape via clip-path */
+  clip-path: path('M7 12.5 C 1 9 0 5 2 3 C 4 1 6 2 7 4 C 8 2 10 1 12 3 C 14 5 13 9 7 12.5 Z');
+}
+
+.heart--full {
+  background: #ef4444;
+}
+
+.heart--half {
+  background: linear-gradient(to right, #ef4444 50%, rgba(255, 255, 255, 0.15) 50%);
+}
+
+.heart--empty {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+/* Kill radius cell highlight */
+.cell--kill-radius {
+  background: rgba(239, 68, 68, 0.18);
+  box-shadow: inset 0 0 0 1px rgba(239, 68, 68, 0.35);
+}
+
+.cell--kill-radius.cell--legal {
+  background: rgba(239, 68, 68, 0.32);
+}
+
+/* Killer pawn glow override */
+.pawn--killer.pawn--onboard {
+  box-shadow: 0 0 12px rgba(239, 68, 68, 0.7), 0 4px 12px rgba(0, 0, 0, 0.4) !important;
+}
+
+/* Dead pawn */
+.pawn-slot--dead {
+  opacity: 0.45;
+  filter: grayscale(0.7);
+}
+
+/* Step path marker */
+.killer-step-marker {
+  position: absolute;
+  background: rgba(255, 209, 102, 0.85);
+  color: #1a1d2e;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: ui-monospace, monospace;
+  font-weight: 700;
+  font-size: 10px;
+  pointer-events: none;
+  border: 2px solid rgba(0, 0, 0, 0.15);
+}
+
+.killer-hint {
+  margin: 4px 0 0;
+  text-align: center;
+  color: var(--muted);
+  font-size: 12px;
+  max-width: 520px;
+}
+
+/* =============================================================
+   KILLER MODE � walls
+   ============================================================= */
+
+/* Wall edge segments (rendered per-edge) */
+.killer-wall {
+  position: absolute;
+  border-radius: 3px;
+  pointer-events: none;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.4);
+}
+
+.killer-wall--frame2 {
+  background: #5cb6ff;
+  box-shadow: 0 0 6px rgba(78, 163, 255, 0.55);
+}
+
+.killer-wall--frame3 {
+  background: #ffb74d;
+  box-shadow: 0 0 6px rgba(255, 156, 51, 0.55);
+}
+
+.killer-wall--cage {
+  background: #c4b5fd;
+  box-shadow: 0 0 8px rgba(167, 139, 250, 0.7);
+  animation: cage-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes cage-pulse {
+  0%, 100% { opacity: 0.85; }
+  50% { opacity: 1; }
+}
+
+/* Cell highlight when picking a wall anchor */
+.cell--wall-anchor {
+  background: rgba(196, 181, 253, 0.3) !important;
+  outline: 2px dashed rgba(196, 181, 253, 0.8);
+  outline-offset: -2px;
+  cursor: pointer;
+}
+
+.cell--wall-anchor:hover {
+  background: rgba(196, 181, 253, 0.5) !important;
+}
+
+.killer-wall-count {
+  font-size: 11px;
+  color: var(--muted);
+  margin-left: 4px;
+}
+
+.btn.btn--active .killer-wall-count {
+  color: rgba(0, 0, 0, 0.5);
+}
+
+/* Ghost preview while placing a stick wall in killer mode */
+.killer-wall--ghost {
+  border-radius: 3px;
+  pointer-events: none;
+  opacity: 0.85;
+}
+
+.killer-wall--ghost-ok {
+  background: rgba(255, 255, 255, 0.85);
+  box-shadow: 0 0 6px rgba(255, 255, 255, 0.4);
+}
+
+.killer-wall--ghost-bad {
+  background: rgba(255, 80, 80, 0.5);
+  box-shadow: 0 0 6px rgba(255, 80, 80, 0.5);
+}
+
+/* Killer Supercharge: edges become clickable + pulse */
+.killer-wall--breakable {
+  cursor: pointer;
+  filter: brightness(1.3);
+  outline: 2px dashed rgba(255, 209, 102, 0.85);
+  outline-offset: 2px;
+  animation: killer-wall-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes killer-wall-pulse {
+  0%, 100% { outline-color: rgba(255, 209, 102, 0.45); }
+  50% { outline-color: rgba(255, 209, 102, 0.95); }
+}
+
+/* Pawn highlighted as a strike target for the Killer */
+.pawn-slot--strikeable {
+  z-index: 4;
+  filter: drop-shadow(0 0 8px rgba(239, 68, 68, 0.85));
+  animation: strikeable-pulse 1s ease-in-out infinite;
+}
+
+@keyframes strikeable-pulse {
+  0%, 100% { filter: drop-shadow(0 0 6px rgba(239, 68, 68, 0.6)); }
+  50% { filter: drop-shadow(0 0 14px rgba(239, 68, 68, 1)); }
+}
+
+/* =============================================================
+   KILLER MODE � zones
+   ============================================================= */
+
+.zone {
+  position: absolute;
+  pointer-events: none;
+  border-radius: 6px;
+  border: 1px dashed currentColor;
+  opacity: 0.55;
+  z-index: 1;
+  overflow: hidden;
+  box-shadow:
+    inset 0 0 18px currentColor,
+    0 0 14px currentColor;
+  animation: zone-glow 2.4s ease-in-out infinite;
+}
+
+@keyframes zone-glow {
+  0%, 100% {
+    box-shadow:
+      inset 0 0 14px currentColor,
+      0 0 10px currentColor;
+    opacity: 0.5;
+  }
+  50% {
+    box-shadow:
+      inset 0 0 22px currentColor,
+      0 0 22px currentColor;
+    opacity: 0.7;
+  }
+}
+
+.zone__label {
+  position: absolute;
+  top: 4px;
+  left: 6px;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
+}
+
+.zone__rounds {
+  font-weight: 600;
+  opacity: 0.85;
+}
+
+.zone--fast {
+  background: rgba(123, 224, 194, 0.22);
+  color: #7be0c2;
+}
+
+.zone--slow {
+  background: rgba(255, 167, 38, 0.22);
+  color: #ffa726;
+}
+
+.zone--killer {
+  background: rgba(239, 68, 68, 0.22);
+  color: #f87171;
+}
+
+.zone--snipe {
+  background: rgba(196, 181, 253, 0.22);
+  color: #c4b5fd;
+}
+
+.zone--heal {
+  background: rgba(74, 222, 128, 0.22);
+  color: #4ade80;
+}
+
+/* Used inside the info modal to render a small zone swatch. */
+.zone.lootbox--display {
+  position: static !important;
+  opacity: 0.9;
+  border-style: solid;
+  flex-shrink: 0;
+  animation: none;
+  box-shadow: inset 0 0 8px currentColor;
+}
+
+/* =============================================================
+   STEPPER (used for Killer setup move-cap selection)
+   ============================================================= */
+
+.stepper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 18px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  min-width: 160px;
+}
+
+.stepper__value {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.stepper__suffix {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.stepper__number {
+  font-size: 38px;
+  font-weight: 800;
+  color: var(--text);
+  line-height: 1;
+}
+
+.stepper__buttons {
+  display: flex;
+  gap: 16px;
+}
+
+.stepper__btn {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: none;
+  font-size: 22px;
+  font-weight: 700;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 120ms ease, transform 80ms ease;
+}
+
+.stepper__btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.stepper__btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.stepper__btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.zone__center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  font-weight: 800;
+  color: #fff;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.7);
+  opacity: 0.85;
+  pointer-events: none;
+}
+
+/* =============================================================
+   COLOR PICKER (killer setup / lobby)
+   ============================================================= */
+
+.color-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.color-swatch {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  padding: 0;
+  transition: transform 80ms ease, border-color 120ms ease;
+  position: relative;
+}
+
+.color-swatch:hover {
+  transform: scale(1.08);
+}
+
+.color-swatch--active {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(255, 209, 102, 0.25);
+}
+
+.color-swatch--blue   { background: #4ea3ff; }
+.color-swatch--pink   { background: #ff6b9a; }
+.color-swatch--teal   { background: #7be0c2; }
+.color-swatch--gold   { background: #ffd166; }
+.color-swatch--purple { background: #c4b5fd; }
+.color-swatch--orange { background: #ff9f43; }
+
+/* =============================================================
+   ROOM CODE CARD (killer lobby)
+   ============================================================= */
+
+.room-code-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 20px 24px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+}
+
+.room-code-card__label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.room-code-card__value {
+  font-family: ui-monospace, monospace;
+  font-size: clamp(32px, 9vw, 52px);
+  font-weight: 800;
+  letter-spacing: 8px;
+  color: var(--accent);
+  line-height: 1;
+  padding: 0 4px 0 12px;
+}
+
+.room-code-card__hint {
+  font-size: 13px;
+  color: var(--muted);
 }

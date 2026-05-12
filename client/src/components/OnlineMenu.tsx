@@ -11,7 +11,7 @@ export default function OnlineMenu({ onCreate, onJoin, onBack }: Props) {
         <button className="btn btn--ghost" onClick={onBack}>
           ← Back
         </button>
-        <h2>Play with friend</h2>
+        <h2>Play with a friend</h2>
         <span style={{ width: 60 }} />
       </div>
 

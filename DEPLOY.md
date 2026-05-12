@@ -107,5 +107,10 @@ git push
   doesn't include the exact Vercel URL (check trailing slashes, http vs https).
 - **First connection after a while is slow** — Render free tier sleeping. Wait
   ~30 seconds, retry.
+- **Render build fails with `Could not find a declaration file for module 'express'`** —
+  Render sets `NODE_ENV=production` which makes `npm install` skip `devDependencies`,
+  but the TypeScript compiler needs `@types/*` to build. Already handled in
+  [`render.yaml`](render.yaml) via `npm install --include=dev`. If you're not
+  using the blueprint, set the build command manually.
 - **Want a custom domain?** Both Vercel and Render support custom domains for
   free; configure DNS in your domain registrar.

@@ -23,11 +23,13 @@ export default function CreateRoom({ onBack, onSubmit, busy }: Props) {
   const [size, setSize] = useState<number>(9);
   const [len2, setLen2] = useState<number>(4);
   const [len3, setLen3] = useState<number>(2);
+  const [abilitiesEnabled, setAbilitiesEnabled] = useState<boolean>(true);
 
   function submit() {
     const config: GameConfig = {
       size,
       walls: { len2, len3 },
+      abilitiesEnabled,
       // The B side gets overwritten on the server when someone joins.
       players: {
         A: { name: name.trim() || "Blue", style },
@@ -107,6 +109,25 @@ export default function CreateRoom({ onBack, onSubmit, busy }: Props) {
           value={len3}
           onChange={setLen3}
         />
+        <div className="option-row">
+          <div className="option-row__label">Abilities</div>
+          <div className="option-row__chips">
+            <button
+              type="button"
+              className={`chip${abilitiesEnabled ? " chip--active" : ""}`}
+              onClick={() => setAbilitiesEnabled(true)}
+            >
+              On
+            </button>
+            <button
+              type="button"
+              className={`chip${!abilitiesEnabled ? " chip--active" : ""}`}
+              onClick={() => setAbilitiesEnabled(false)}
+            >
+              Off
+            </button>
+          </div>
+        </div>
       </section>
 
       <div className="setup__actions">

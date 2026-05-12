@@ -1,5 +1,7 @@
 import { useMemo, useState } from "react";
 import {
+  ABILITY_INFO,
+  AbilityId,
   Coord,
   GameState,
   PawnStyle,
@@ -8,10 +10,26 @@ import {
   WallLength,
   WallOrientation,
 } from "../game/types";
-import { legalMovesFor, validateWallPlacement } from "../game/rules";
+import {
+  dashFirstTargets,
+  dashSecondTargets,
+  legalDiagonalTargets,
+  legalJumpWallTargets,
+  legalMovesFor,
+  trapWallTargets,
+  validateWallPlacement,
+} from "../game/rules";
 import Pawn from "./Pawn";
 
 type WallDraft = { orientation: WallOrientation; length: WallLength };
+
+export type AbilityMode =
+  | { kind: "none" }
+  | { kind: "jumpWall"; slot: 0 | 1 }
+  | { kind: "dash"; slot: 0 | 1; first: Coord | null }
+  | { kind: "diagonalStep"; slot: 0 | 1 }
+  | { kind: "breakWall"; slot: 0 | 1 }
+  | { kind: "trapWall"; slot: 0 | 1 };
 
 type Props = {
   state: GameState;
@@ -19,18 +37,14 @@ type Props = {
   wallDraft: WallDraft;
   cell: number;
   gap: number;
-  /**
-   * Whose perspective the board is rendered from. The player set here
-   * appears at the bottom; the opponent at the top.
-   */
   viewAs?: PlayerId;
-  /**
-   * The player this client is allowed to control. Defaults to state.turn
-   * (i.e. local hot-seat). For online play, set to "A" or "B".
-   */
   controllingPlayer?: PlayerId;
+  abilityMode: AbilityMode;
   onMove: (to: Coord) => void;
   onPlaceWall: (wall: Omit<Wall, "owner">) => void;
+  onAbilityCell: (cell: Coord) => void;
+  onAbilityWall: (index: number) => void;
+  onAbilityDashFirst: (cell: Coord) => void;
 };
 
 export default function Board({
@@ -41,8 +55,12 @@ export default function Board({
   gap,
   viewAs = "A",
   controllingPlayer,
+  abilityMode,
   onMove,
   onPlaceWall,
+  onAbilityCell,
+  onAbilityWall,
+  onAbilityDashFirst,
 }: Props) {
   const { size } = state;
   const [hover, setHover] = useState<{ x: number; y: number } | null>(null);
@@ -54,23 +72,42 @@ export default function Board({
   const fr = (r: number) => (flip ? size - 1 - r : r);
   const fc = (c: number) => (flip ? size - 1 - c : c);
 
-  const canControl =
-    state.status === "playing" &&
-    state.turn === (controllingPlayer ?? state.turn);
+  const turnOwner = state.turn;
+  const canControl = state.status === "playing" && turnOwner === (controllingPlayer ?? turnOwner);
+  const inAbility = abilityMode.kind !== "none";
+
+  // Ability target highlighting
+  const abilityTargets = useMemo<Coord[]>(() => {
+    if (!canControl) return [];
+    switch (abilityMode.kind) {
+      case "jumpWall":
+        return legalJumpWallTargets(state, turnOwner);
+      case "diagonalStep":
+        return legalDiagonalTargets(state, turnOwner);
+      case "dash":
+        return abilityMode.first
+          ? dashSecondTargets(state, turnOwner, abilityMode.first)
+          : dashFirstTargets(state, turnOwner);
+      case "trapWall":
+        return trapWallTargets(state);
+      default:
+        return [];
+    }
+  }, [abilityMode, state, turnOwner, canControl]);
+
+  const targetSet = useMemo(
+    () => new Set(abilityTargets.map((p) => `${p.r}:${p.c}`)),
+    [abilityTargets],
+  );
 
   const legal = useMemo(
     () =>
-      mode === "move" && canControl
-        ? legalMovesFor(state, state.turn)
-        : [],
-    [state, mode, canControl],
+      mode === "move" && canControl && !inAbility ? legalMovesFor(state, turnOwner) : [],
+    [state, mode, canControl, inAbility, turnOwner],
   );
 
-  // For wall preview: take pointer position in displayed coords, convert to
-  // an actual board wall, validate, draw.
   const ghost = useMemo<Omit<Wall, "owner"> | null>(() => {
-    if (mode !== "wall" || !hover || !canControl) return null;
-
+    if (mode !== "wall" || !hover || !canControl || inAbility) return null;
     const draftDisplay = pointToWallAnchorDisplay(
       hover.x,
       hover.y,
@@ -79,99 +116,97 @@ export default function Board({
       cell,
       gap,
     );
-
     if (!draftDisplay) return null;
-
     return flip ? unflipWall(draftDisplay, size) : draftDisplay;
-  }, [mode, hover, size, wallDraft, cell, gap, flip, canControl]);
+  }, [mode, hover, size, wallDraft, cell, gap, flip, canControl, inAbility]);
 
   const ghostValid = useMemo(() => {
     if (!ghost) return false;
-
-    const v = validateWallPlacement(state, state.turn, ghost);
-
+    const v = validateWallPlacement(state, turnOwner, ghost);
     return v.ok;
-  }, [ghost, state]);
+  }, [ghost, state, turnOwner]);
 
   function handleMouseMove(e: React.MouseEvent<HTMLDivElement>) {
-    if (mode !== "wall") return;
-
+    if (mode !== "wall" || inAbility) return;
     const rect = e.currentTarget.getBoundingClientRect();
-
-    setHover({
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top,
-    });
+    setHover({ x: e.clientX - rect.left, y: e.clientY - rect.top });
   }
 
   function pointFromTouch(e: React.TouchEvent<HTMLDivElement>) {
     const t = e.touches[0] ?? e.changedTouches[0];
-
     if (!t) return null;
-
     const rect = e.currentTarget.getBoundingClientRect();
-
-    return {
-      x: t.clientX - rect.left,
-      y: t.clientY - rect.top,
-    };
+    return { x: t.clientX - rect.left, y: t.clientY - rect.top };
   }
 
   function handleTouchStart(e: React.TouchEvent<HTMLDivElement>) {
-    if (mode !== "wall") return;
-
+    if (mode !== "wall" || inAbility) return;
     const p = pointFromTouch(e);
-
     if (p) setHover(p);
   }
 
   function handleTouchMove(e: React.TouchEvent<HTMLDivElement>) {
-    if (mode !== "wall") return;
-
+    if (mode !== "wall" || inAbility) return;
     const p = pointFromTouch(e);
-
     if (p) setHover(p);
   }
 
   function handleTouchEnd(e: React.TouchEvent<HTMLDivElement>) {
-    if (mode !== "wall") return;
-
+    if (mode !== "wall" || inAbility) return;
     if (ghost && ghostValid) {
-      // Prevent the synthetic click that follows touchend so we don't
-      // double-place / interact with cells underneath.
       e.preventDefault();
-
       onPlaceWall(ghost);
     }
-
-    // Keep hover for a moment so the user sees what they placed; the next
-    // mouseleave/mousemove resets it.
   }
 
   function handleBoardClick() {
-    if (mode === "wall" && ghost && ghostValid) {
-      onPlaceWall(ghost);
+    if (mode === "wall" && !inAbility && ghost && ghostValid) onPlaceWall(ghost);
+  }
+
+  function handleCellClick(r: number, c: number) {
+    if (!canControl) return;
+    const pos = { r, c };
+    if (inAbility) {
+      const inSet = targetSet.has(`${r}:${c}`);
+      if (!inSet) return;
+      switch (abilityMode.kind) {
+        case "jumpWall":
+        case "diagonalStep":
+        case "trapWall":
+          onAbilityCell(pos);
+          break;
+        case "dash":
+          if (abilityMode.first === null) {
+            onAbilityDashFirst(pos);
+          } else {
+            onAbilityCell(pos);
+          }
+          break;
+      }
+      return;
+    }
+    if (mode === "move" && legal.some((m) => m.r === r && m.c === c)) {
+      onMove(pos);
     }
   }
 
-  // Render walls in display coords (flip if needed)
-  function renderWall(
-    w: Wall | (Omit<Wall, "owner"> & { owner?: PlayerId }),
-  ) {
+  function handleWallClick(idx: number) {
+    if (!canControl) return;
+    if (abilityMode.kind === "breakWall") {
+      onAbilityWall(idx);
+    }
+  }
+
+  function renderWall(w: Wall | (Omit<Wall, "owner"> & { owner?: PlayerId })) {
     return wallStyle(flip ? flipWall(w, size) : w, cell, gap);
   }
 
   const cells: { r: number; c: number }[] = [];
-
-  for (let r = 0; r < size; r++) {
-    for (let c = 0; c < size; c++) {
-      cells.push({ r, c });
-    }
-  }
+  for (let r = 0; r < size; r++) for (let c = 0; c < size; c++) cells.push({ r, c });
 
   return (
     <div
-      className="board"
+      className={`board${inAbility ? " board--ability" : ""}`}
       style={{ width: totalPx, height: totalPx }}
       onMouseMove={handleMouseMove}
       onMouseLeave={() => setHover(null)}
@@ -182,11 +217,18 @@ export default function Board({
     >
       {cells.map(({ r, c }) => {
         const isLegal = legal.some((m) => m.r === r && m.c === c);
-
+        const isAbilityTarget = targetSet.has(`${r}:${c}`);
+        const isFirst =
+          abilityMode.kind === "dash" &&
+          abilityMode.first &&
+          abilityMode.first.r === r &&
+          abilityMode.first.c === c;
         return (
           <div
             key={`cell-${r}-${c}`}
-            className={`cell${isLegal ? " cell--legal" : ""}`}
+            className={`cell${isLegal ? " cell--legal" : ""}${
+              isAbilityTarget ? " cell--ability-target" : ""
+            }${isFirst ? " cell--ability-first" : ""}`}
             style={{
               left: cellPx(fc(c)),
               top: cellPx(fr(r)),
@@ -195,58 +237,71 @@ export default function Board({
             }}
             onClick={(e) => {
               e.stopPropagation();
-
-              if (mode === "move" && isLegal) {
-                onMove({ r, c });
-              }
+              handleCellClick(r, c);
             }}
           />
         );
       })}
 
-      {/*
-        Goal lines mark the OUTER edge of each player's goal row.
-        Player A's goal is row 0 (top of the actual board).
-        Player B's goal is row size-1 (bottom of the actual board).
-        When the view is flipped, those edges swap.
-      */}
-
       <div
         className="goal-row goal-row--A"
-        style={{
-          left: 0,
-          top: flip ? totalPx - 4 : 0,
-          width: totalPx,
-          height: 4,
-        }}
+        style={{ left: 0, top: flip ? totalPx - 4 : 0, width: totalPx, height: 4 }}
       />
-
       <div
         className="goal-row goal-row--B"
-        style={{
-          left: 0,
-          top: flip ? 0 : totalPx - 4,
-          width: totalPx,
-          height: 4,
-        }}
+        style={{ left: 0, top: flip ? 0 : totalPx - 4, width: totalPx, height: 4 }}
       />
 
-      {state.walls.map((w, i) => (
-        <div
-          key={`wall-${i}`}
-          className={`wall wall--${w.owner}`}
-          style={renderWall(w)}
-        />
-      ))}
+      {state.walls.map((w, i) => {
+        const breakable = abilityMode.kind === "breakWall";
+        return (
+          <div
+            key={`wall-${i}`}
+            className={`wall wall--${w.owner}${breakable ? " wall--breakable" : ""}`}
+            style={renderWall(w)}
+            onClick={(e) => {
+              if (!breakable) return;
+              e.stopPropagation();
+              handleWallClick(i);
+            }}
+          />
+        );
+      })}
 
       {ghost && (
         <div
-          className={`wall wall--ghost ${
-            ghostValid ? "wall--ghost-ok" : "wall--ghost-bad"
-          }`}
+          className={`wall wall--ghost ${ghostValid ? "wall--ghost-ok" : "wall--ghost-bad"}`}
           style={renderWall(ghost)}
         />
       )}
+
+      {/* Loot boxes */}
+      {state.lootBoxes.map((box, i) => (
+        <LootBoxOnBoard
+          key={`box-${i}-${box.pos.r}-${box.pos.c}`}
+          pos={box.pos}
+          ability={box.ability}
+          cell={cell}
+          gap={gap}
+          flip={flip}
+          size={size}
+        />
+      ))}
+
+      {/* Traps */}
+      {state.traps.map((t, i) => (
+        <TrapOnBoard
+          key={`trap-${i}`}
+          pos={t.pos}
+          owner={t.owner}
+          turnsLeft={t.turnsLeft}
+          hitsLeft={t.hitsLeft}
+          cell={cell}
+          gap={gap}
+          flip={flip}
+          size={size}
+        />
+      ))}
 
       <PawnOnBoard
         player="A"
@@ -259,7 +314,6 @@ export default function Board({
         flip={flip}
         size={size}
       />
-
       <PawnOnBoard
         player="B"
         cell={cell}
@@ -297,27 +351,112 @@ function PawnOnBoard({
   size: number;
 }) {
   const cellPx = (i: number) => i * (cell + gap);
-
   const pad = cell * 0.15;
-
   const dr = flip ? size - 1 - pos.r : pos.r;
   const dc = flip ? size - 1 - pos.c : pos.c;
-
   return (
     <div
       className={`pawn-slot${winner ? " pawn-slot--winner" : ""}`}
+      style={{ left: cellPx(dc) + pad, top: cellPx(dr) + pad }}
+    >
+      <Pawn player={player} style={styleName} size={cell * 0.7} active={active} onBoard />
+    </div>
+  );
+}
+
+function LootBoxOnBoard({
+  pos,
+  ability,
+  cell,
+  gap,
+  flip,
+  size,
+}: {
+  pos: Coord;
+  ability: AbilityId;
+  cell: number;
+  gap: number;
+  flip: boolean;
+  size: number;
+}) {
+  const cellPx = (i: number) => i * (cell + gap);
+  const dr = flip ? size - 1 - pos.r : pos.r;
+  const dc = flip ? size - 1 - pos.c : pos.c;
+  const pad = cell * 0.16;
+  const sz = cell - pad * 2;
+  const info = ABILITY_INFO[ability];
+  return (
+    <div
+      className={`lootbox lootbox--${info.category}`}
       style={{
         left: cellPx(dc) + pad,
         top: cellPx(dr) + pad,
+        width: sz,
+        height: sz,
+        fontSize: Math.round(sz * 0.55),
       }}
+      title={`${info.name} — ${info.desc}`}
     >
-      <Pawn
-        player={player}
-        style={styleName}
-        size={cell * 0.7}
-        active={active}
-        onBoard
-      />
+      <span className="lootbox__glyph">{abilityGlyph(ability)}</span>
+    </div>
+  );
+}
+
+function abilityGlyph(id: AbilityId): string {
+  switch (id) {
+    case "jumpWall":
+      return "↟";
+    case "dash":
+      return "»";
+    case "diagonalStep":
+      return "⤢";
+    case "breakWall":
+      return "✕";
+    case "trapWall":
+      return "◈";
+    case "scramble":
+      return "≈";
+  }
+}
+
+function TrapOnBoard({
+  pos,
+  owner,
+  turnsLeft,
+  hitsLeft,
+  cell,
+  gap,
+  flip,
+  size,
+}: {
+  pos: Coord;
+  owner: "A" | "B";
+  turnsLeft: number;
+  hitsLeft: number;
+  cell: number;
+  gap: number;
+  flip: boolean;
+  size: number;
+}) {
+  const cellPx = (i: number) => i * (cell + gap);
+  const dr = flip ? size - 1 - pos.r : pos.r;
+  const dc = flip ? size - 1 - pos.c : pos.c;
+  const pad = cell * 0.1;
+  const sz = cell - pad * 2;
+  // Pulse when on the brink (1 turn or 1 hit left).
+  const nearBreak = turnsLeft <= 1 || hitsLeft <= 1;
+  return (
+    <div
+      className={`trap trap--${owner}${nearBreak ? " trap--near-break" : ""}`}
+      style={{ left: cellPx(dc) + pad, top: cellPx(dr) + pad, width: sz, height: sz }}
+      title={`Trap — ${turnsLeft} turn(s) and ${hitsLeft} hit(s) left`}
+    >
+      <span className="trap__count">{turnsLeft}</span>
+      <span className="trap__hits" aria-hidden>
+        {Array.from({ length: hitsLeft }).map((_, i) => (
+          <span key={i} className="trap__hit-dot" />
+        ))}
+      </span>
     </div>
   );
 }
@@ -328,7 +467,6 @@ function wallStyle(
   gap: number,
 ): React.CSSProperties {
   const cellPx = (i: number) => i * (cell + gap);
-
   if (w.orientation === "h") {
     return {
       left: cellPx(w.c),
@@ -337,7 +475,6 @@ function wallStyle(
       height: gap,
     };
   }
-
   return {
     left: cellPx(w.c) + cell,
     top: cellPx(w.r),
@@ -346,10 +483,6 @@ function wallStyle(
   };
 }
 
-/**
- * Convert pointer (x,y) inside the board to the closest valid wall anchor
- * — in display coordinates (these may be flipped vs actual board).
- */
 function pointToWallAnchorDisplay(
   x: number,
   y: number,
@@ -359,105 +492,51 @@ function pointToWallAnchorDisplay(
   gap: number,
 ): Omit<Wall, "owner"> | null {
   const step = cell + gap;
-
   if (draft.orientation === "h") {
     let bestR = 0;
     let bestDist = Infinity;
-
     for (let r = 0; r < size - 1; r++) {
       const center = r * step + cell + gap / 2;
-
       const d = Math.abs(y - center);
-
       if (d < bestDist) {
         bestDist = d;
         bestR = r;
       }
     }
-
-    const halfWidth =
-      (draft.length * cell + (draft.length - 1) * gap) / 2;
-
+    const halfWidth = (draft.length * cell + (draft.length - 1) * gap) / 2;
     let cAnchor = Math.round((x - halfWidth) / step);
-
-    cAnchor = Math.max(
-      0,
-      Math.min(size - draft.length, cAnchor),
-    );
-
-    return {
-      orientation: "h",
-      r: bestR,
-      c: cAnchor,
-      length: draft.length,
-    };
+    cAnchor = Math.max(0, Math.min(size - draft.length, cAnchor));
+    return { orientation: "h", r: bestR, c: cAnchor, length: draft.length };
   }
-
   let bestC = 0;
   let bestDist = Infinity;
-
   for (let c = 0; c < size - 1; c++) {
     const center = c * step + cell + gap / 2;
-
     const d = Math.abs(x - center);
-
     if (d < bestDist) {
       bestDist = d;
       bestC = c;
     }
   }
-
-  const halfHeight =
-    (draft.length * cell + (draft.length - 1) * gap) / 2;
-
+  const halfHeight = (draft.length * cell + (draft.length - 1) * gap) / 2;
   let rAnchor = Math.round((y - halfHeight) / step);
-
-  rAnchor = Math.max(
-    0,
-    Math.min(size - draft.length, rAnchor),
-  );
-
-  return {
-    orientation: "v",
-    r: rAnchor,
-    c: bestC,
-    length: draft.length,
-  };
+  rAnchor = Math.max(0, Math.min(size - draft.length, rAnchor));
+  return { orientation: "v", r: rAnchor, c: bestC, length: draft.length };
 }
 
-/**
- * Flip a wall between actual board coords and display coords.
- * Both directions use the same transform (180° rotation).
- *
- * Horizontal wall (r, c, len): the cut is between rows r and r+1, covering
- * columns c..c+len-1. After 180°, the cut is between rows (size-2-r) and
- * (size-1-r), at columns (size-c-len)..(size-1-c). So r' = size-2-r,
- * c' = size-c-len.
- *
- * Vertical wall (r, c, len): cut between cols c and c+1, rows r..r+len-1.
- * After 180°: r' = size-r-len, c' = size-2-c.
- */
-function flipWall<
-  T extends Pick<Wall, "orientation" | "r" | "c" | "length">
->(w: T, size: number): T {
+function flipWall<T extends Pick<Wall, "orientation" | "r" | "c" | "length">>(
+  w: T,
+  size: number,
+): T {
   if (w.orientation === "h") {
-    return {
-      ...w,
-      r: size - 2 - w.r,
-      c: size - w.c - w.length,
-    };
+    return { ...w, r: size - 2 - w.r, c: size - w.c - w.length };
   }
-
-  return {
-    ...w,
-    r: size - w.r - w.length,
-    c: size - 2 - w.c,
-  };
+  return { ...w, r: size - w.r - w.length, c: size - 2 - w.c };
 }
 
-function unflipWall<
-  T extends Pick<Wall, "orientation" | "r" | "c" | "length">
->(w: T, size: number): T {
-  // The transform is its own inverse.
+function unflipWall<T extends Pick<Wall, "orientation" | "r" | "c" | "length">>(
+  w: T,
+  size: number,
+): T {
   return flipWall(w, size);
 }

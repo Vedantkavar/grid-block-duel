@@ -113,6 +113,25 @@ export default function GameSetup({ initial, onBack, onStart }: Props) {
           value={config.walls.len3}
           onChange={setLen3}
         />
+        <div className="option-row">
+          <div className="option-row__label">Abilities</div>
+          <div className="option-row__chips">
+            <button
+              type="button"
+              className={`chip${config.abilitiesEnabled ? " chip--active" : ""}`}
+              onClick={() => setConfig((c) => ({ ...c, abilitiesEnabled: true }))}
+            >
+              On
+            </button>
+            <button
+              type="button"
+              className={`chip${!config.abilitiesEnabled ? " chip--active" : ""}`}
+              onClick={() => setConfig((c) => ({ ...c, abilitiesEnabled: false }))}
+            >
+              Off
+            </button>
+          </div>
+        </div>
       </section>
 
       <div className="setup__actions">

@@ -3,6 +3,7 @@ import express from "express";
 import http from "http";
 import { Server } from "socket.io";
 import { RoomManager } from "./rooms.js";
+import { KillerRoomManager, type KillerRoom } from "./killerRooms.js";
 import {
   ClientToServerEvents,
   ServerToClientEvents,
@@ -39,6 +40,7 @@ const io = new Server<ClientToServerEvents, ServerToClientEvents, never, SocketD
 );
 
 const rooms = new RoomManager();
+const killerRooms = new KillerRoomManager();
 
 io.on("connection", (socket) => {
   console.log(`[+] ${socket.id} connected`);
@@ -109,9 +111,109 @@ io.on("connection", (socket) => {
     handleLeave(socket.id);
   });
 
+  // ===== Killer mode (4 player) =====
+
+  function broadcastKillerRoom(room: KillerRoom) {
+    for (const s of room.slots) {
+      if (!s.socketId) continue;
+      io.to(s.socketId).emit("killer:roomState", killerRooms.snapshot(room, s.id));
+    }
+  }
+
+  socket.on("killer:createRoom", (req, ack) => {
+    const result = killerRooms.create({
+      name: req.name,
+      style: req.style,
+      color: req.color,
+      config: req.config,
+      socketId: socket.id,
+    });
+    if (!result.ok) {
+      ack({ ok: false, reason: result.reason });
+      return;
+    }
+    socket.data.killerRoomId = result.room.roomId;
+    socket.data.killerSlot = "A";
+    socket.join(`killer:${result.room.roomId}`);
+    ack({
+      ok: true,
+      roomId: result.room.roomId,
+      you: "A",
+      snapshot: killerRooms.snapshot(result.room, "A"),
+    });
+    broadcastKillerRoom(result.room);
+    console.log(`[killer] ${result.room.roomId} created by ${socket.id}`);
+  });
+
+  socket.on("killer:joinRoom", (req, ack) => {
+    const result = killerRooms.join({
+      roomId: req.roomId,
+      name: req.name,
+      style: req.style,
+      color: req.color,
+      socketId: socket.id,
+    });
+    if (!result.ok) {
+      ack({ ok: false, reason: result.reason });
+      return;
+    }
+    socket.data.killerRoomId = result.room.roomId;
+    socket.data.killerSlot = result.slot;
+    socket.join(`killer:${result.room.roomId}`);
+    ack({
+      ok: true,
+      you: result.slot,
+      snapshot: killerRooms.snapshot(result.room, result.slot),
+    });
+    broadcastKillerRoom(result.room);
+    console.log(`[killer] ${result.room.roomId} joined by ${socket.id} as ${result.slot}`);
+  });
+
+  socket.on("killer:start", (ack) => {
+    const { killerRoomId } = socket.data;
+    if (!killerRoomId) {
+      ack({ ok: false, reason: "Not in a killer room." });
+      return;
+    }
+    const result = killerRooms.start(killerRoomId, socket.id);
+    if (!result.ok) {
+      ack({ ok: false, reason: result.reason });
+      return;
+    }
+    ack({ ok: true });
+    broadcastKillerRoom(result.room);
+  });
+
+  socket.on("killer:action", (action, ack) => {
+    const { killerRoomId, killerSlot } = socket.data;
+    if (!killerRoomId || !killerSlot) {
+      ack({ ok: false, reason: "Not in a killer room." });
+      return;
+    }
+    const result = killerRooms.applyAction(killerRoomId, killerSlot, action);
+    if (!result.ok) {
+      ack({ ok: false, reason: result.reason });
+      return;
+    }
+    ack({ ok: true });
+    broadcastKillerRoom(result.room);
+  });
+
+  socket.on("killer:rematch", () => {
+    const { killerRoomId } = socket.data;
+    if (!killerRoomId) return;
+    const room = killerRooms.rematch(killerRoomId, socket.id);
+    if (room) broadcastKillerRoom(room);
+  });
+
+  socket.on("killer:leaveRoom", () => {
+    handleKillerLeave(socket.id);
+  });
+
   socket.on("disconnect", () => {
     console.log(`[-] ${socket.id} disconnected`);
     handleLeave(socket.id);
+    handleKillerLeave(socket.id);
   });
 
   function handleLeave(socketId: string) {
@@ -132,6 +234,31 @@ io.on("connection", (socket) => {
       "roomClosed",
       `Player ${removed.player} disconnected.`,
     );
+  }
+
+  function handleKillerLeave(socketId: string) {
+    const removed = killerRooms.removeSocket(socketId);
+    if (!removed) return;
+    socket.leave(`killer:${removed.roomId}`);
+    socket.data.killerRoomId = undefined;
+    socket.data.killerSlot = undefined;
+    if (!removed.room) return;
+    // Notify remaining players. If the game had started, close the room
+    // for everyone since 4-player can't continue with a missing player.
+    const gameStarted = !!removed.room.state;
+    for (const s of removed.room.slots) {
+      if (!s.socketId) continue;
+      io.to(s.socketId).emit(
+        "killer:roomState",
+        killerRooms.snapshot(removed.room, s.id),
+      );
+      if (gameStarted) {
+        io.to(s.socketId).emit(
+          "killer:roomClosed",
+          `Player ${removed.slot} disconnected.`,
+        );
+      }
+    }
   }
 });
 
