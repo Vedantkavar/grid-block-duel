@@ -214,7 +214,7 @@ export default function KillerBoard({
   return (
     <div
       className="board"
-      style={{ width: totalPx, height: totalPx, touchAction: "manipulation" }}
+      style={{ width: totalPx, height: totalPx, touchAction: "none" }}
       onMouseMove={handleMouseMove}
       onMouseLeave={() => setHover(null)}
       onTouchStart={handleTouchStart}

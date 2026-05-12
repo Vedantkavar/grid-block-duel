@@ -207,7 +207,7 @@ export default function Board({
   return (
     <div
       className={`board${inAbility ? " board--ability" : ""}`}
-      style={{ width: totalPx, height: totalPx }}
+      style={{ width: totalPx, height: totalPx, touchAction: "none" }}
       onMouseMove={handleMouseMove}
       onMouseLeave={() => setHover(null)}
       onTouchStart={handleTouchStart}
