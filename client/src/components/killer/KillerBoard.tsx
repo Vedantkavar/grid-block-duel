@@ -105,7 +105,9 @@ export default function KillerBoard({
     if (state.status !== "playing" || wallShape) return [];
     // Online: only show legal-move highlights to the active player on
     // their own device. Offline (localPlayer undefined): always show.
-    if (localPlayer && localPlayer !== me.id) return [];
+    if (localPlayer && me.role === "runner" && localPlayer !== me.id) {
+      return [];
+    }
     if (me.role === "killer") {
       const maxSteps = effectiveStepFor(state, me);
       const stepsTaken = killerStepHistory.length;
@@ -139,7 +141,7 @@ export default function KillerBoard({
     };
     return reachableCells(tempState, from, stepsRemaining, me.id);
   }, [state, me, killerStepHistory, wallShape]);
-  
+
   const legalSet = useMemo(
     () => new Set(legal.map((c) => `${c.r}:${c.c}`)),
     [legal],
