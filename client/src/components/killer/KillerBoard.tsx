@@ -40,6 +40,12 @@ type Props = {
   onBreakEdge: (wallIndex: number, edgeIndex: number) => void;
   /** Killer clicked a Runner inside their kill radius. */
   onStrikeRunner: (target: import("../../game/killer/types").KillerPlayerId) => void;
+  /**
+   * In online mode, the local viewer's slot. Used to hide legal-move
+   * highlights when it isn't your turn (so opponents can't see your
+   * planned path).
+   */
+  localPlayer?: import("../../game/killer/types").KillerPlayerId;
 };
 
 export default function KillerBoard({
@@ -55,6 +61,7 @@ export default function KillerBoard({
   onPlaceCage,
   onBreakEdge,
   onStrikeRunner,
+  localPlayer,
 }: Props) {
   const { size } = state;
   const totalPx = size * cell + (size - 1) * gap;
@@ -96,6 +103,9 @@ export default function KillerBoard({
   // Legal step cells (only when not in wall placement mode)
   const legal = useMemo<Coord[]>(() => {
     if (state.status !== "playing" || wallShape) return [];
+    // Online: only show legal-move highlights to the active player on
+    // their own device. Offline (localPlayer undefined): always show.
+    if (localPlayer && localPlayer !== me.id) return [];
     if (me.role === "killer") {
       const maxSteps = effectiveStepFor(state, me);
       const stepsTaken = killerStepHistory.length;
@@ -129,7 +139,7 @@ export default function KillerBoard({
     };
     return reachableCells(tempState, from, stepsRemaining, me.id);
   }, [state, me, killerStepHistory, wallShape]);
-
+  
   const legalSet = useMemo(
     () => new Set(legal.map((c) => `${c.r}:${c.c}`)),
     [legal],

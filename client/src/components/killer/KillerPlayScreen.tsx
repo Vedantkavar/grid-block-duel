@@ -320,6 +320,7 @@ export default function KillerPlayScreen({
           onPlaceCage={handlePlaceCage}
           onBreakEdge={handleBreakEdge}
           onStrikeRunner={handleStrike}
+          localPlayer={online?.me}
         />
       </div>
 
