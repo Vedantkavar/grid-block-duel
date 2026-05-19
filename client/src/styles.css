@@ -74,6 +74,46 @@ button {
   font-size: clamp(13px, 2.5vw, 16px);
 }
 
+.menu__how-to {
+  margin-top: 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 16px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    border-color 120ms ease,
+    background 120ms ease,
+    transform 120ms ease;
+}
+
+.menu__how-to:hover {
+  border-color: var(--accent);
+  background: rgba(255, 209, 102, 0.08);
+  transform: translateY(-1px);
+}
+
+.menu__how-to > span[aria-hidden] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #0a0c16;
+  font-family: ui-serif, Georgia, serif;
+  font-style: italic;
+  font-weight: 700;
+  font-size: 13px;
+}
+
 .menu__cards {
   width: 100%;
   display: grid;
@@ -2250,4 +2290,265 @@ button {
 .room-code-card__hint {
   font-size: 13px;
   color: var(--muted);
+}
+
+/* =============================================================
+   HOW-TO-PLAY MODAL
+   ============================================================= */
+
+.htp {
+  width: min(640px, 100%);
+  max-height: min(86vh, 760px);
+  text-align: left;
+  padding: 22px 24px;
+  gap: 14px;
+}
+
+.htp > h2 {
+  text-align: center;
+}
+
+.htp__tabs {
+  display: flex;
+  gap: 6px;
+  padding: 4px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  align-self: center;
+}
+
+.htp__tab {
+  padding: 6px 16px;
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 500;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 120ms ease, color 120ms ease;
+}
+
+.htp__tab:hover {
+  color: var(--text);
+}
+
+.htp__tab--active {
+  background: var(--accent);
+  color: #0a0c16;
+}
+
+.htp__body {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-right: 6px;
+  margin-right: -6px;
+}
+
+.htp__body::-webkit-scrollbar {
+  width: 8px;
+}
+
+.htp__body::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 4px;
+}
+
+.htp__section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.htp__section-title {
+  margin: 0;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.htp__section p {
+  margin: 0;
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.htp__section ul {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.htp__section li {
+  margin: 2px 0;
+}
+
+.htp__section strong {
+  color: var(--text);
+}
+
+.htp__ability-list {
+  list-style: none;
+  padding: 0 !important;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 6px;
+}
+
+.htp__ability-list li {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 13px;
+}
+
+.htp__ability-list strong {
+  color: var(--accent);
+}
+
+.htp__hint {
+  font-size: 12px !important;
+  color: var(--muted) !important;
+  font-style: italic;
+}
+
+.htp__keys {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 6px 12px;
+}
+
+.htp__kbd-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text);
+}
+
+.htp__kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 24px;
+  padding: 0 6px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--line);
+  border-bottom-width: 2px;
+  border-radius: 6px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  color: var(--text);
+}
+
+/* --- Visual figures --- */
+.htp__figure {
+  margin: 4px 0 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.htp__figure-art {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.htp-svg {
+  width: min(220px, 60%);
+  height: auto;
+  display: block;
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.3));
+}
+
+.htp__caption {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted);
+  text-align: center;
+  max-width: 320px;
+  line-height: 1.4;
+}
+
+/* --- Chip rows (abilities, zones) --- */
+.htp__chips {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+@media (min-width: 520px) {
+  .htp__chips {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.htp__chip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.htp__chip-swatch {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.htp__chip-swatch--square {
+  border-radius: 6px;
+}
+
+.htp__chip-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.htp__chip-body strong {
+  font-size: 13px;
+  color: var(--text);
+}
+
+.htp__chip-body span {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.35;
+}
+
+@media (max-width: 480px) {
+  .htp {
+    padding: 18px 16px;
+  }
+  .htp__section ul {
+    padding-left: 16px;
+  }
+  .htp-svg {
+    width: min(180px, 70%);
+  }
 }

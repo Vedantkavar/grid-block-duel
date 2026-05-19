@@ -7,6 +7,7 @@ import JoinRoom from "./components/JoinRoom";
 import Lobby from "./components/Lobby";
 import MainMenu from "./components/MainMenu";
 import OnlineMenu from "./components/OnlineMenu";
+import HostJoinMenu from "./components/HostJoinMenu";
 import KillerMenu from "./components/killer/KillerMenu";
 import KillerSetup from "./components/killer/KillerSetup";
 import KillerPlayScreen from "./components/killer/KillerPlayScreen";
@@ -48,11 +49,13 @@ type Screen =
   | "setup-local"
   | "play-local"
   | "online-menu"
+  | "online-host-join"
   | "online-create"
   | "online-join"
   | "online-lobby"
   | "play-online"
   | "killer-menu"
+  | "killer-host-join"
   | "killer-setup"
   | "killer-play"
   | "killer-online-create"
@@ -400,8 +403,7 @@ export default function App() {
   if (screen === "menu") {
     return (
       <MainMenu
-        onPlayLocal={() => setScreen("setup-local")}
-        onPlayOnline={() => setScreen("online-menu")}
+        onPlayDuel={() => setScreen("online-menu")}
         onPlayKiller={() => setScreen("killer-menu")}
       />
     );
@@ -410,7 +412,7 @@ export default function App() {
     return (
       <GameSetup
         initial={config}
-        onBack={() => setScreen("menu")}
+        onBack={() => setScreen("online-menu")}
         onStart={handleStartLocal}
       />
     );
@@ -420,12 +422,18 @@ export default function App() {
       <KillerMenu
         onBack={() => setScreen("menu")}
         onPlayLocal={() => setScreen("killer-setup")}
-        onHostOnline={() => {
-          setScreen("killer-online-create");
-        }}
-        onJoinOnline={() => {
-          setScreen("killer-online-join");
-        }}
+        onPlayOnline={() => setScreen("killer-host-join")}
+      />
+    );
+  }
+  if (screen === "killer-host-join") {
+    return (
+      <HostJoinMenu
+        title="Killer Is Near — Online"
+        hostFriends="3 friends"
+        onBack={() => setScreen("killer-menu")}
+        onHost={() => setScreen("killer-online-create")}
+        onJoin={() => setScreen("killer-online-join")}
       />
     );
   }
@@ -461,7 +469,7 @@ export default function App() {
     return (
       <KillerCreateRoom
         busy={busy}
-        onBack={() => setScreen("killer-menu")}
+        onBack={() => setScreen("killer-host-join")}
         onSubmit={(data) => {
           const s = ensureSocket();
           setBusy(true);
@@ -489,7 +497,7 @@ export default function App() {
     return (
       <KillerJoinRoom
         busy={busy}
-        onBack={() => setScreen("killer-menu")}
+        onBack={() => setScreen("killer-host-join")}
         onSubmit={(data) => {
           const s = ensureSocket();
           setBusy(true);
@@ -596,7 +604,17 @@ export default function App() {
     return (
       <OnlineMenu
         onBack={() => setScreen("menu")}
-        onCreate={() => setScreen("online-create")}
+        onPlayLocal={() => setScreen("setup-local")}
+        onPlayOnline={() => setScreen("online-host-join")}
+      />
+    );
+  }
+  if (screen === "online-host-join") {
+    return (
+      <HostJoinMenu
+        title="Duels — Online"
+        onBack={() => setScreen("online-menu")}
+        onHost={() => setScreen("online-create")}
         onJoin={() => {
           setJoinError(null);
           setScreen("online-join");
@@ -607,7 +625,7 @@ export default function App() {
   if (screen === "online-create") {
     return (
       <CreateRoom
-        onBack={() => setScreen("online-menu")}
+        onBack={() => setScreen("online-host-join")}
         onSubmit={handleCreateRoom}
         busy={busy}
       />
@@ -616,7 +634,7 @@ export default function App() {
   if (screen === "online-join") {
     return (
       <JoinRoom
-        onBack={() => setScreen("online-menu")}
+        onBack={() => setScreen("online-host-join")}
         onSubmit={handleJoinRoom}
         busy={busy}
         error={joinError}
