@@ -760,7 +760,6 @@ function PlayScreen(props: PlayScreenProps) {
 
   const bottomId: PlayerId = viewAs;
   const topId: PlayerId = bottomId === "A" ? "B" : "A";
-  const [draftSlot, setDraftSlot] = useState<HTMLDivElement | null>(null);
 
   return (
     <div className="app app--play">
@@ -858,7 +857,6 @@ function PlayScreen(props: PlayScreenProps) {
           onAbilityCell={onAbilityCell}
           onAbilityWall={onAbilityWall}
           onAbilityDashFirst={onAbilityDashFirst}
-          draftActionsTarget={draftSlot}
         />
       </div>
 
@@ -921,8 +919,6 @@ function PlayScreen(props: PlayScreenProps) {
           </button>
         )}
       </div>
-
-      <div ref={setDraftSlot} className="board__draft-slot" />
 
       {error && <div className="error">{error}</div>}
 

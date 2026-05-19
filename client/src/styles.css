@@ -832,26 +832,24 @@ button {
   background: rgba(255, 80, 80, 0.15);
 }
 
-/* Slot rendered just below the play-screen toolbar that receives the
-   touch-only Place / Cancel action bar via a React portal. */
-.board__draft-slot {
-  width: 100%;
-  display: flex;
-  justify-content: center;
-}
-
-/* Touch-only action bar: appears in the slot below the toolbar so it never
-   blocks the playable board area or overlaps the Move / Wall controls. */
+/* Floating Place / Cancel action bar shown on touch while a ghost wall is drafted.
+   Pinned above the bottom toolbar so it never blocks the playable board area
+   and never overlaps the Move / Wall controls. */
 .board__draft-actions {
-  margin-top: 8px;
-  display: inline-flex;
+  position: fixed;
+  left: 50%;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 96px);
+  transform: translateX(-50%);
+  display: flex;
   align-items: center;
   gap: 8px;
   padding: 6px;
   border-radius: 999px;
   background: rgba(15, 23, 42, 0.95);
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.55);
+  z-index: 100;
   pointer-events: auto;
+  backdrop-filter: blur(8px);
   max-width: calc(100vw - 24px);
   white-space: nowrap;
 }
