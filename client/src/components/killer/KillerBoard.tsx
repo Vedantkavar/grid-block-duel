@@ -1,4 +1,5 @@
 import { useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   Coord,
   KillerGameState,
@@ -46,6 +47,7 @@ type Props = {
    * planned path).
    */
   localPlayer?: import("../../game/killer/types").KillerPlayerId;
+  draftActionsTarget?: HTMLElement | null;
 };
 
 export default function KillerBoard({
@@ -62,6 +64,7 @@ export default function KillerBoard({
   onBreakEdge,
   onStrikeRunner,
   localPlayer,
+  draftActionsTarget,
 }: Props) {
   const { size } = state;
   const totalPx = size * cell + (size - 1) * gap;
@@ -335,37 +338,27 @@ export default function KillerBoard({
           />
         ))}
 
-      {isTouch && placingStick && ghost && (
-        <div
-          className="board__draft-actions"
-          onMouseMove={(e) => e.stopPropagation()}
-          onClick={(e) => e.stopPropagation()}
-          onTouchStart={(e) => e.stopPropagation()}
-          onTouchEnd={(e) => e.stopPropagation()}
-        >
-          <button
-            type="button"
-            className="board__draft-btn board__draft-btn--cancel"
-            onClick={(e) => {
-              e.stopPropagation();
-              cancelGhost();
-            }}
-          >
-            ✕ Cancel
-          </button>
-          <button
-            type="button"
-            className="board__draft-btn board__draft-btn--confirm"
-            disabled={!ghost.valid}
-            onClick={(e) => {
-              e.stopPropagation();
-              confirmGhost();
-            }}
-          >
-            ✓ Place wall
-          </button>
-        </div>
-      )}
+      {isTouch && placingStick && ghost && draftActionsTarget &&
+        createPortal(
+          <div className="board__draft-actions">
+            <button
+              type="button"
+              className="board__draft-btn board__draft-btn--cancel"
+              onClick={cancelGhost}
+            >
+              ✕ Cancel
+            </button>
+            <button
+              type="button"
+              className="board__draft-btn board__draft-btn--confirm"
+              disabled={!ghost.valid}
+              onClick={confirmGhost}
+            >
+              ✓ Place wall
+            </button>
+          </div>,
+          draftActionsTarget,
+        )}
 
       {/* Pawns */}
       {state.players.map((p) => (

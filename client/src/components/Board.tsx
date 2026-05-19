@@ -1,4 +1,5 @@
 import { useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   ABILITY_INFO,
   AbilityId,
@@ -45,6 +46,7 @@ type Props = {
   onAbilityCell: (cell: Coord) => void;
   onAbilityWall: (index: number) => void;
   onAbilityDashFirst: (cell: Coord) => void;
+  draftActionsTarget?: HTMLElement | null;
 };
 
 export default function Board({
@@ -61,6 +63,7 @@ export default function Board({
   onAbilityCell,
   onAbilityWall,
   onAbilityDashFirst,
+  draftActionsTarget,
 }: Props) {
   const { size } = state;
   const [hover, setHover] = useState<{ x: number; y: number } | null>(null);
@@ -297,37 +300,27 @@ export default function Board({
         />
       )}
 
-      {isTouch && mode === "wall" && !inAbility && ghost && (
-        <div
-          className="board__draft-actions"
-          onMouseMove={(e) => e.stopPropagation()}
-          onClick={(e) => e.stopPropagation()}
-          onTouchStart={(e) => e.stopPropagation()}
-          onTouchEnd={(e) => e.stopPropagation()}
-        >
-          <button
-            type="button"
-            className="board__draft-btn board__draft-btn--cancel"
-            onClick={(e) => {
-              e.stopPropagation();
-              cancelGhost();
-            }}
-          >
-            ✕ Cancel
-          </button>
-          <button
-            type="button"
-            className="board__draft-btn board__draft-btn--confirm"
-            disabled={!ghostValid}
-            onClick={(e) => {
-              e.stopPropagation();
-              confirmGhost();
-            }}
-          >
-            ✓ Place wall
-          </button>
-        </div>
-      )}
+      {isTouch && mode === "wall" && !inAbility && ghost && draftActionsTarget &&
+        createPortal(
+          <div className="board__draft-actions">
+            <button
+              type="button"
+              className="board__draft-btn board__draft-btn--cancel"
+              onClick={cancelGhost}
+            >
+              ✕ Cancel
+            </button>
+            <button
+              type="button"
+              className="board__draft-btn board__draft-btn--confirm"
+              disabled={!ghostValid}
+              onClick={confirmGhost}
+            >
+              ✓ Place wall
+            </button>
+          </div>,
+          draftActionsTarget,
+        )}
 
       {/* Loot boxes */}
       {state.lootBoxes.map((box, i) => (

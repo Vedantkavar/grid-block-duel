@@ -248,6 +248,7 @@ export default function KillerPlayScreen({
   }
 
   // -------- Playing --------
+  const [draftSlot, setDraftSlot] = useState<HTMLDivElement | null>(null);
   return (
     <div className="app app--play">
       <div className="play__topbar">
@@ -321,6 +322,7 @@ export default function KillerPlayScreen({
           onBreakEdge={handleBreakEdge}
           onStrikeRunner={handleStrike}
           localPlayer={online?.me}
+          draftActionsTarget={draftSlot}
         />
       </div>
 
@@ -445,6 +447,8 @@ export default function KillerPlayScreen({
           </>
         )}
       </div>
+
+      <div ref={setDraftSlot} className="board__draft-slot" />
 
       <p className="killer-hint">
         {superchargeMode
