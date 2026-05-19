@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
   Coord,
   KillerGameState,
@@ -74,6 +74,8 @@ export default function KillerBoard({
   const placingCage = wallShape === "cage";
 
   const [hover, setHover] = useState<{ x: number; y: number } | null>(null);
+  const [isTouch, setIsTouch] = useState(false);
+  const touchActiveRef = useRef(false);
 
   const radius = useMemo(() => killStrikeRadius(state), [state]);
   const radiusSet = useMemo(
@@ -170,6 +172,8 @@ export default function KillerBoard({
   }, [placingStick, hover, wallShape, wallOrientation, size, cell, gap, state, me.id]);
 
   function handleMouseMove(e: React.MouseEvent<HTMLDivElement>) {
+    if (touchActiveRef.current) return;
+    if (isTouch) setIsTouch(false);
     if (!placingStick) return;
     const rect = e.currentTarget.getBoundingClientRect();
     setHover({ x: e.clientX - rect.left, y: e.clientY - rect.top });
@@ -183,6 +187,8 @@ export default function KillerBoard({
   }
 
   function handleTouchStart(e: React.TouchEvent<HTMLDivElement>) {
+    touchActiveRef.current = true;
+    if (!isTouch) setIsTouch(true);
     if (!placingStick) return;
     const p = pointFromTouch(e);
     if (p) setHover(p);
@@ -193,17 +199,30 @@ export default function KillerBoard({
     if (p) setHover(p);
   }
   function handleTouchEnd(e: React.TouchEvent<HTMLDivElement>) {
-    if (!placingStick) return;
-    if (ghost && ghost.valid) {
+    // Suppress the synthesized click that would auto-commit the wall.
+    if (placingStick && ghost) {
       e.preventDefault();
+    }
+    setTimeout(() => {
+      touchActiveRef.current = false;
+    }, 350);
+  }
+
+  function handleBoardClick() {
+    if (!placingStick) return;
+    if (isTouch || touchActiveRef.current) return;
+    if (ghost && ghost.valid) {
       onPlaceWall(ghost.anchor, wallOrientation);
     }
   }
 
-  function handleBoardClick() {
-    if (placingStick && ghost && ghost.valid) {
-      onPlaceWall(ghost.anchor, wallOrientation);
-    }
+  function confirmGhost() {
+    if (!placingStick || !ghost || !ghost.valid) return;
+    onPlaceWall(ghost.anchor, wallOrientation);
+  }
+
+  function cancelGhost() {
+    setHover(null);
   }
 
   function handleCellClickInternal(r: number, c: number) {
@@ -315,6 +334,38 @@ export default function KillerBoard({
             style={edgeStyle(e, cell, gap)}
           />
         ))}
+
+      {isTouch && placingStick && ghost && (
+        <div
+          className="board__draft-actions"
+          onMouseMove={(e) => e.stopPropagation()}
+          onClick={(e) => e.stopPropagation()}
+          onTouchStart={(e) => e.stopPropagation()}
+          onTouchEnd={(e) => e.stopPropagation()}
+        >
+          <button
+            type="button"
+            className="board__draft-btn board__draft-btn--cancel"
+            onClick={(e) => {
+              e.stopPropagation();
+              cancelGhost();
+            }}
+          >
+            ✕ Cancel
+          </button>
+          <button
+            type="button"
+            className="board__draft-btn board__draft-btn--confirm"
+            disabled={!ghost.valid}
+            onClick={(e) => {
+              e.stopPropagation();
+              confirmGhost();
+            }}
+          >
+            ✓ Place wall
+          </button>
+        </div>
+      )}
 
       {/* Pawns */}
       {state.players.map((p) => (

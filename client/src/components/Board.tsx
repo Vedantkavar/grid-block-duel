@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
   ABILITY_INFO,
   AbilityId,
@@ -64,6 +64,8 @@ export default function Board({
 }: Props) {
   const { size } = state;
   const [hover, setHover] = useState<{ x: number; y: number } | null>(null);
+  const [isTouch, setIsTouch] = useState(false);
+  const touchActiveRef = useRef(false);
   const flip = viewAs === "B";
 
   const cellPx = (i: number) => i * (cell + gap);
@@ -127,6 +129,8 @@ export default function Board({
   }, [ghost, state, turnOwner]);
 
   function handleMouseMove(e: React.MouseEvent<HTMLDivElement>) {
+    if (touchActiveRef.current) return;
+    if (isTouch) setIsTouch(false);
     if (mode !== "wall" || inAbility) return;
     const rect = e.currentTarget.getBoundingClientRect();
     setHover({ x: e.clientX - rect.left, y: e.clientY - rect.top });
@@ -140,6 +144,8 @@ export default function Board({
   }
 
   function handleTouchStart(e: React.TouchEvent<HTMLDivElement>) {
+    touchActiveRef.current = true;
+    if (!isTouch) setIsTouch(true);
     if (mode !== "wall" || inAbility) return;
     const p = pointFromTouch(e);
     if (p) setHover(p);
@@ -152,15 +158,31 @@ export default function Board({
   }
 
   function handleTouchEnd(e: React.TouchEvent<HTMLDivElement>) {
-    if (mode !== "wall" || inAbility) return;
-    if (ghost && ghostValid) {
+    // Suppress the synthesized click that would auto-commit the wall.
+    // The user must explicitly tap the floating "Place" button.
+    if (mode === "wall" && !inAbility && ghost) {
       e.preventDefault();
-      onPlaceWall(ghost);
     }
+    // Allow a brief window for the synthesized click before clearing the flag,
+    // so handleBoardClick can know this came from touch.
+    setTimeout(() => {
+      touchActiveRef.current = false;
+    }, 350);
   }
 
   function handleBoardClick() {
-    if (mode === "wall" && !inAbility && ghost && ghostValid) onPlaceWall(ghost);
+    if (mode !== "wall" || inAbility) return;
+    if (isTouch || touchActiveRef.current) return; // touch users confirm via the floating button
+    if (ghost && ghostValid) onPlaceWall(ghost);
+  }
+
+  function confirmGhost() {
+    if (mode !== "wall" || inAbility) return;
+    if (ghost && ghostValid) onPlaceWall(ghost);
+  }
+
+  function cancelGhost() {
+    setHover(null);
   }
 
   function handleCellClick(r: number, c: number) {
@@ -273,6 +295,38 @@ export default function Board({
           className={`wall wall--ghost ${ghostValid ? "wall--ghost-ok" : "wall--ghost-bad"}`}
           style={renderWall(ghost)}
         />
+      )}
+
+      {isTouch && mode === "wall" && !inAbility && ghost && (
+        <div
+          className="board__draft-actions"
+          onMouseMove={(e) => e.stopPropagation()}
+          onClick={(e) => e.stopPropagation()}
+          onTouchStart={(e) => e.stopPropagation()}
+          onTouchEnd={(e) => e.stopPropagation()}
+        >
+          <button
+            type="button"
+            className="board__draft-btn board__draft-btn--cancel"
+            onClick={(e) => {
+              e.stopPropagation();
+              cancelGhost();
+            }}
+          >
+            ✕ Cancel
+          </button>
+          <button
+            type="button"
+            className="board__draft-btn board__draft-btn--confirm"
+            disabled={!ghostValid}
+            onClick={(e) => {
+              e.stopPropagation();
+              confirmGhost();
+            }}
+          >
+            ✓ Place wall
+          </button>
+        </div>
       )}
 
       {/* Loot boxes */}
