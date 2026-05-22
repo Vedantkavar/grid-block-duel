@@ -97,7 +97,3 @@ render.yaml             Render service blueprint
 ## Deploying
 
 See [DEPLOY.md](DEPLOY.md) for step-by-step Vercel (client) + Render (server) deployment. The shipped [render.yaml](render.yaml) provisions the server service.
-
-## License
-
-This repository is provided as-is for personal / educational use.
