@@ -1975,6 +1975,25 @@ button {
   background: rgba(239, 68, 68, 0.32);
 }
 
+/* Dim cells that are reachable but not in a single step (2+ steps away). */
+.cell--legal.cell--legal-far {
+  background: rgba(120, 90, 50, 0.35);
+  opacity: 0.55;
+  cursor: default;
+}
+.cell--legal.cell--legal-far:hover {
+  background: rgba(120, 90, 50, 0.35);
+  opacity: 0.55;
+}
+.cell--kill-radius.cell--legal.cell--legal-far {
+  background: rgba(120, 40, 40, 0.45);
+  opacity: 0.55;
+}
+.cell--kill-radius.cell--legal.cell--legal-far:hover {
+  background: rgba(120, 40, 40, 0.45);
+  opacity: 0.55;
+}
+
 /* Killer pawn glow override */
 .pawn--killer.pawn--onboard {
   box-shadow: 0 0 12px rgba(239, 68, 68, 0.7), 0 4px 12px rgba(0, 0, 0, 0.4) !important;

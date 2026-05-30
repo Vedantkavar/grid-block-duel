@@ -108,6 +108,43 @@ export function getRunners(state: KillerGameState): KillerPlayerState[] {
   return state.players.filter((p) => p.role === "runner");
 }
 
+/**
+ * True if the Killer is currently inside an active O-Cage. While caged the
+ * Killer may only `skip` — no movement, strike, snipe, or Supercharge, and
+ * any zone they're standing in is suppressed.
+ */
+export function isKillerCaged(state: KillerGameState): boolean {
+  const killer = getKiller(state);
+  for (const w of state.walls) {
+    if (w.shape !== "cage") continue;
+    const top = w.edges.some(
+      (e) => e.orientation === "h" && e.r === killer.pos.r - 1 && e.c === killer.pos.c,
+    );
+    const bottom = w.edges.some(
+      (e) => e.orientation === "h" && e.r === killer.pos.r && e.c === killer.pos.c,
+    );
+    const left = w.edges.some(
+      (e) => e.orientation === "v" && e.r === killer.pos.r && e.c === killer.pos.c - 1,
+    );
+    const right = w.edges.some(
+      (e) => e.orientation === "v" && e.r === killer.pos.r && e.c === killer.pos.c,
+    );
+    const onTopEdge = killer.pos.r === 0;
+    const onBottomEdge = killer.pos.r === state.size - 1;
+    const onLeftEdge = killer.pos.c === 0;
+    const onRightEdge = killer.pos.c === state.size - 1;
+    if (
+      (top || onTopEdge) &&
+      (bottom || onBottomEdge) &&
+      (left || onLeftEdge) &&
+      (right || onRightEdge)
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
+
 export function inBounds(size: number, c: Coord): boolean {
   return c.r >= 0 && c.r < size && c.c >= 0 && c.c < size;
 }
@@ -420,6 +457,12 @@ export function applyKillerAction(
 
   if (action.type === "skip") {
     return { ok: true, state: endMove(state) };
+  }
+
+  // Caged Killer: only `skip` is allowed. No move, strike, snipe, or
+  // Supercharge; zones they stand on don't help.
+  if (me.role === "killer" && isKillerCaged(state)) {
+    return { ok: false, reason: "You're caged — skip your turn." };
   }
 
   if (action.type === "supercharge") {

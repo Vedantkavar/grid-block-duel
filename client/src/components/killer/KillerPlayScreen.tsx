@@ -9,6 +9,7 @@ import {
   getKiller,
   getRunners,
   isInZoneKind,
+  isKillerCaged,
 } from "../../game/killer/rules";
 import {
   Coord,
@@ -345,12 +346,16 @@ export default function KillerPlayScreen({
               onClick={endKillerMoveEarly}
               disabled={false}
               title={
-                killerSteps.length === 0
+                isKillerCaged(state)
+                  ? "Caged — you can only skip"
+                  : killerSteps.length === 0
                   ? "Skip your move"
                   : "Stop after this step"
               }
             >
-              {killerSteps.length === 0
+              {isKillerCaged(state)
+                ? "🔒 Caged — Skip"
+                : killerSteps.length === 0
                 ? "Skip"
                 : `Done (${killerSteps.length}/${effectiveStepFor(state, me)})`}
             </button>
@@ -363,10 +368,12 @@ export default function KillerPlayScreen({
             </button>
             <button
               className={`btn${superchargeMode ? " btn--active" : ""}`}
-              disabled={!me.superchargeReady || state.walls.length === 0}
+              disabled={!me.superchargeReady || state.walls.length === 0 || isKillerCaged(state)}
               onClick={() => setSuperchargeMode((m) => !m)}
               title={
-                me.superchargeReady
+                isKillerCaged(state)
+                  ? "Caged — abilities disabled"
+                  : me.superchargeReady
                   ? "Break one wall edge (free action)"
                   : `Charging… (${me.superchargeProgress}/2)`
               }

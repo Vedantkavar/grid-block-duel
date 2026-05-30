@@ -149,6 +149,32 @@ export default function KillerBoard({
     [legal],
   );
 
+  // Subset of `legal` reachable in a single step from the current cursor.
+  // Used so the Killer's 1-step neighbours render brighter than the 2+ step
+  // cells (which require an intermediate orthogonal step to reach).
+  const nearSet = useMemo(() => {
+    if (state.status !== "playing" || wallShape) return new Set<string>();
+    if (localPlayer && me.role === "runner" && localPlayer !== me.id) {
+      return new Set<string>();
+    }
+    const maxSteps = effectiveStepFor(state, me);
+    const stepsTaken = killerStepHistory.length;
+    if (maxSteps - stepsTaken <= 0) return new Set<string>();
+    const from =
+      killerStepHistory.length > 0
+        ? killerStepHistory[killerStepHistory.length - 1]
+        : me.pos;
+    const tempState: KillerGameState = {
+      ...state,
+      players: state.players.map((p) =>
+        p.id === me.id ? { ...p, pos: from } : p,
+      ),
+    };
+    return new Set(
+      reachableCells(tempState, from, 1, me.id).map((c) => `${c.r}:${c.c}`),
+    );
+  }, [state, me, killerStepHistory, wallShape, localPlayer]);
+
   // Compute ghost wall (stick) from cursor position. Same algorithm as duel.
   const ghost = useMemo<{
     anchor: Coord;
@@ -236,7 +262,7 @@ export default function KillerBoard({
       // Click handled at the board level via the ghost wall.
       return;
     }
-    if (legalSet.has(k)) onCellClick({ r, c });
+    if (legalSet.has(k) && nearSet.has(k)) onCellClick({ r, c });
   }
 
   const cells: { r: number; c: number }[] = [];
@@ -257,6 +283,7 @@ export default function KillerBoard({
         const k = `${r}:${c}`;
         const inRadius = radiusSet.has(k);
         const isLegal = legalSet.has(k);
+        const isLegalFar = isLegal && !nearSet.has(k);
         const isCageTarget =
           placingCage && killer.pos.r === r && killer.pos.c === c;
         return (
@@ -266,6 +293,7 @@ export default function KillerBoard({
               "cell",
               inRadius ? "cell--kill-radius" : "",
               isLegal ? "cell--legal" : "",
+              isLegalFar ? "cell--legal-far" : "",
               isCageTarget ? "cell--wall-anchor" : "",
             ]
               .filter(Boolean)
